@@ -3,46 +3,35 @@ import sqlite3
 import requests
 from bs4 import BeautifulSoup
 
-### YAHOO FINANCE SCRAPING
-MOST_ACTIVE_STOCKS_URL = "tbd"
+BIRDS_EBIRD_LINK = 'https://api.ebird.org/v2/data/obs/KZ/recent'
 
-### STONKS API ###
-STONKS_API_URL = "tbd"
+BIRDS_API_KEY = '22hppic79e3v'
 
 # make a request to the url
-req = requests.get(MOST_ACTIVE_STOCKS_URL)
+req = requests.get(BIRDS_EBIRD_LINK)
 
 # if successful, use beautiful soup
 if req.status_code == 200:
-    investing_data = BeautifulSoup(req.content, 'html.parser')
+    birds_data = BeautifulSoup(req.content, 'html.parser')
 
 # Create connection to database
 conn = sqlite3.connect('data.db')
 c = conn.cursor()
 
 # Delete tables if they exist
-c.execute('DROP TABLE IF EXISTS "companies";')
-c.execute('DROP TABLE IF EXISTS "quotes";')
+c.execute('DROP TABLE IF EXISTS "birds";')
+# c.execute('DROP TABLE IF EXISTS "quotes";')
 
 # Create tables in the database to store the collected data.
-c.execute('''CREATE TABLE IF NOT EXISTS companies (
+# change to have primary keys
+c.execute('''CREATE TABLE IF NOT EXISTS birds (
                 symbol TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
                 location TEXT NOT NULL
              )''')
 
-c.execute('''CREATE TABLE IF NOT EXISTS quotes (
-                symbol TEXT PRIMARY KEY,
-                close FLOAT NOT NULL,
-                price FLOAT NOT NULL,
-                avg_price FLOAT NOT NULL,
-                change_pct FLOAT NOT NULL,
-                volume INTEGER NOT NULL,
-                FOREIGN KEY (symbol) REFERENCES companies(symbol)
-             )''')
-
 # Add data to the tables in the database. REMEMBER TO COMMIT
-for row in investing_data.find_all('tr')[1:]:  # skip the header row
+for row in birds_data.find_all('tr')[1:]:  # skip the header row
     cells = row.find_all('td')
 
     # find the name within the link
@@ -70,9 +59,6 @@ for row in investing_data.find_all('tr')[1:]:  # skip the header row
 
     state = cells[7].text.lower().strip()
 
-    # adds data to the companies table
-    c.execute("INSERT INTO companies (name, symbol, location) VALUES (?, ?, ?)", (name, symbol, state)) 
-
     # Make a request to the API endpoint for the symbol
     jan_response = requests.get(STONKS_API_URL + "/" + symbol + "/chart/date/2023-01-20")
     month_response = requests.get(STONKS_API_URL + "/" + symbol + "/chart/1m")
@@ -93,8 +79,9 @@ for row in investing_data.find_all('tr')[1:]:  # skip the header row
 
             avg_price = float(month_price/len(month_entries))
 
-    # adds data to the quotes table
-    c.execute("INSERT INTO quotes (symbol, close, price, avg_price, change_pct, volume) VALUES (?, ?, ?, ?, ?, ?)", (symbol, close, price, avg_price, change_percentage, volume)) 
+    # adds data to the companies table
+    c.execute("INSERT INTO birds (name, symbol, location) VALUES (?, ?, ?)", (name, symbol, state)) 
+
 
 # commits changes to the table
 conn.commit()
