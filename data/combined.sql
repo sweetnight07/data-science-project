@@ -8,4 +8,3 @@ tempr.temp_data t on l.fips_code = t.fips
 INNER JOIN 
 observations.Observations b on b.Observation_Count != 'X' and b.county_name=l.name and (b.Latitude BETWEEN l.lat - 0.5 and l.lat+0.5) and (b.Longitude BETWEEN l.lng-0.5 and l.lng+0.5) and (SUBSTRING(b.Observation_Date, 1, 4) = t.year)
 ORDER BY b.Observation_Date
-LIMIT 1000;
